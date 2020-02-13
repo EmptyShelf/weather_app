@@ -2,9 +2,9 @@ package com.jonscully.weather;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,7 +14,6 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.bumptech.glide.Glide;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,7 +21,8 @@ import org.json.JSONObject;
 public class MainActivity extends AppCompatActivity {
 
     TextView temperatureLabel;
-    ImageView weatherImage;
+    TextView weatherImage;
+    Typeface weatherFont;
     Handler mHandler;
     int UPDATE_INTERVAL = (5 * 60 * 1000); // every 5 minutes
 
@@ -32,9 +32,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         temperatureLabel = findViewById(R.id.temperatureLabel);
-        weatherImage = findViewById(R.id.weatherimage);
-        mHandler = new Handler();
+        weatherImage = findViewById(R.id.weatherImage);
 
+        weatherFont = Typeface.createFromAsset(this.getApplicationContext().getAssets(), "fonts/weathericonsRegularWebfont.ttf");
+        weatherImage.setTypeface(weatherFont);
+
+        mHandler = new Handler();
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -42,6 +45,35 @@ public class MainActivity extends AppCompatActivity {
                 mHandler.postDelayed(this, UPDATE_INTERVAL);
             }
         }, 0);
+    }
+
+    String getIconForCode(int code) {
+        switch ((code / 100)) {
+            case 2: // Thunderstorm
+                return "\uf01e";
+            case 3: // Drizzle
+                return "\uf01c";
+            case 5: // Rain
+                return "\uf019";
+            case 6: // Snow
+                return "\uf01b";
+            case 7: // Atmosphere
+                if (code == 762)
+                    return "\uf0c8";
+                else if (code == 781)
+                    return "\uf056";
+                else
+                    return "\uf014";
+            case 8:
+                if (code > 800) {
+                    return "\uf013"; // Clouds
+                }
+                else {
+                    return "\uf00d"; // Clear
+                }
+            default:
+                return "\uf041";
+        }
     }
 
     void updateWeather() {
@@ -61,11 +93,8 @@ public class MainActivity extends AppCompatActivity {
                     temperatureLabel.setText(tempFormatted);
 
                     // get icon
-                    String iconName = response.getJSONArray("weather").getJSONObject(0).getString("icon");
-                    String imageURL = String.format("https://openweathermap.org/img/w/%1s.png", iconName);
-                    Glide.with(MainActivity.this).load(imageURL).into(weatherImage);
-                    //Toast.makeText(MainActivity.this, (CharSequence) imageURL.toString(), Toast.LENGTH_LONG).show();
-
+                    String iconSymbol = getIconForCode(response.getInt("cod"));
+                    weatherImage.setText(iconSymbol);
                 } catch (JSONException e) {
                     Toast.makeText(MainActivity.this, (CharSequence) e.getMessage(), Toast.LENGTH_LONG).show();
                     //e.printStackTrace();
