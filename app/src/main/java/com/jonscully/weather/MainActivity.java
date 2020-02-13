@@ -4,6 +4,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,8 +26,13 @@ public class MainActivity extends AppCompatActivity {
 
     TextView temperatureLabel;
     ImageView weatherImage;
+    EditText zipCodeText;
+    Button searchButton;
+    String zipCodeString = "97206";
     Handler mHandler;
-    int UPDATE_INTERVAL = (5 * 60 * 1000); // every 5 minutes
+    Runnable periodUpdate;
+    //int UPDATE_INTERVAL = (5 * 60 * 1000); // every 5 minutes
+    int UPDATE_INTERVAL = 1000; // every 1 second (testing)
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,19 +41,33 @@ public class MainActivity extends AppCompatActivity {
 
         temperatureLabel = findViewById(R.id.temperatureLabel);
         weatherImage = findViewById(R.id.weatherimage);
-        mHandler = new Handler();
+        zipCodeText = findViewById(R.id.zipCodeText);
+        searchButton = findViewById(R.id.searchButton);
 
-        mHandler.postDelayed(new Runnable() {
+        searchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                updateZipCode(zipCodeText.getText().toString());
+            }
+        });
+
+        mHandler = new Handler();
+        periodUpdate = new Runnable() {
             @Override
             public void run() {
+                mHandler.postDelayed(periodUpdate, UPDATE_INTERVAL);
                 updateWeather();
-                mHandler.postDelayed(this, UPDATE_INTERVAL);
             }
-        }, 0);
+        };
+    }
+
+    void updateZipCode(String zipCode) {
+        zipCodeString = zipCode;
+        mHandler.post(periodUpdate);
     }
 
     void updateWeather() {
-        String apiURL = "https://api.openweathermap.org/data/2.5/weather?zip=97206,us&units=imperial&APPID=fef127e7a66510c75e8a195fe08fe72d";
+        String apiURL = String.format("https://api.openweathermap.org/data/2.5/weather?zip=%1$s,us&units=imperial&APPID=fef127e7a66510c75e8a195fe08fe72d", zipCodeString);
 
         RequestQueue queue = Volley.newRequestQueue( this );
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, apiURL, null, new Response.Listener<JSONObject>() {
